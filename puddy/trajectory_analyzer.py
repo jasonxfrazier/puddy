@@ -346,4 +346,5 @@ def visualize_trajectories_sample(
         f"(Showing {len(normal_indices)} normal and {len(anomaly_indices)} anomalous trajectories)"
     )
     ax.view_init(elev=20, azim=45)  # type: ignore
+    plt.show()
     return plt.gcf(), ax
