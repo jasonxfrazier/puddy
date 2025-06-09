@@ -19,8 +19,7 @@ Or for development (to auto-update as you change source):
 pip install -e .
 ```
 
-**PyPI:** [https://pypi.org/project/puddy/](https://pypi.org/project/puddy/)  
-*(replace this with the actual link when published)*
+**PyPI:** [https://pypi.org/project/puddy/](https://pypi.org/project/puddy/0.1.0/)  
 
 ---
 
@@ -84,7 +83,7 @@ visualize_trajectories_sample(
 
 ## Documentation
 
-For advanced usage, custom features, or troubleshooting, see the [Wiki](https://github.com/yourusername/puddy/wiki) (coming soon).
+For advanced usage, custom features, or troubleshooting, see the [Wiki](https://github.com/jasonxfrazier/puddy/wiki).
 
 ---
 
