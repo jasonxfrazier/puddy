@@ -1,9 +1,11 @@
 from enum import Enum
-from typing import List, Optional, Generator
+from typing import List, Optional, Union, TextIO
 import pandas as pd
 import numpy as np
+import pyarrow as pa
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
+from readers import read_data
 
 class TrajectoryType(Enum):
     GEOGRAPHIC = 'geo'
@@ -77,9 +79,9 @@ class TrajectoryCollection:
         self.trajectories: List[NormalizedTrajectory] = []
         self.config: Optional[ColumnConfig] = None
 
-    def load_from_csv(
+    def load_from_file(
         self,
-        filepath: str,
+        source: Union[str, TextIO, pd.DataFrame, pa.Table],  # str, file-like, DataFrame, etc.
         config: Optional[ColumnConfig] = None,
         min_points: int = 20
     ) -> None:
@@ -87,21 +89,21 @@ class TrajectoryCollection:
             config = ColumnConfig.create_geo(identifier_col='identifier')
         self.config = config
 
-        df: pd.DataFrame = pd.read_csv(filepath, low_memory=False)
+        records = read_data(source)
+        df = pd.DataFrame(records)
+
+        self.trajectories = []
         if config.identifier_col:
-            groups: Generator[pd.DataFrame, None, None] = (
-                g for _, g in df.groupby(config.identifier_col) if len(g) >= min_points
-            )
-            self.trajectories = [
-                NormalizedTrajectory.from_df_group(group, config)
-                for group in groups
-            ]
+            groups = df.groupby(config.identifier_col).filter(lambda x: len(x) >= min_points).groupby(config.identifier_col)
+            for _, group in groups:
+                normalized_traj = NormalizedTrajectory.from_df_group(group, config)
+                self.trajectories.append(normalized_traj)
         else:
             if len(df) >= min_points:
-                self.trajectories = [NormalizedTrajectory.from_df_group(df, config)]
-            else:
-                self.trajectories = []
-        print(f"Loaded {len(self.trajectories)} trajectories")
+                normalized_traj = NormalizedTrajectory.from_df_group(df, config)
+                self.trajectories.append(normalized_traj)
+
+        print(f'Loaded {len(self.trajectories)} trajectories')
 
     def visualize_sample(self, n: int = 5) -> None:
         plt.figure(figsize=(10, 10))

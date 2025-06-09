@@ -2,7 +2,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.decomposition import PCA
-from TrajectoryCollection import TrajectoryCollection, NormalizedTrajectory
+from puddy.trajectory_collection import TrajectoryCollection, NormalizedTrajectory
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from typing import Dict, List, Tuple, Optional, Union

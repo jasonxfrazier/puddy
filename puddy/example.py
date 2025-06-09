@@ -1,5 +1,5 @@
-from TrajectoryCollection import TrajectoryCollection, ColumnConfig
-from TrajectoryAnalyzer import TrajectoryAnalyzer, visualize_trajectories_sample
+from puddy.trajectory_collection import TrajectoryCollection, ColumnConfig
+from puddy.trajectory_analyzer import TrajectoryAnalyzer, visualize_trajectories_sample
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,7 +12,7 @@ def main() -> None:
         identifier_col='identifier'
     )
     collection = TrajectoryCollection()
-    collection.load_from_csv('somegeodata.csv', config=geo_config)
+    collection.load_from_file('somegeodata.csv', config=geo_config)
     collection.visualize_sample(5)
 
     analyzer = TrajectoryAnalyzer(collection)
