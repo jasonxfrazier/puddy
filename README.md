@@ -19,7 +19,7 @@ Or for development (to auto-update as you change source):
 pip install -e .
 ```
 
-**PyPI:** [https://pypi.org/project/puddy/](https://pypi.org/project/puddy/0.1.0/)
+**PyPI:** [https://pypi.org/project/puddy/](https://pypi.org/project/puddy/)
 
 ---
 
