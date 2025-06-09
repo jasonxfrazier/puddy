@@ -5,7 +5,7 @@ import numpy as np
 import pyarrow as pa
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
-from readers import read_data
+from puddy.readers import read_data
 
 class TrajectoryType(Enum):
     GEOGRAPHIC = 'geo'
@@ -57,9 +57,15 @@ class NormalizedTrajectory:
         df: pd.DataFrame,
         config: ColumnConfig
     ) -> 'NormalizedTrajectory':
+        df = df.copy()
+        df[config.x_col] = pd.to_numeric(df[config.x_col], errors='raise')
+        df[config.y_col] = pd.to_numeric(df[config.y_col], errors='raise')
+        df[config.z_col] = pd.to_numeric(df[config.z_col], errors='raise')
+        
         if config.trajectory_type == TrajectoryType.GEOGRAPHIC:
             ref_lat: float = df[config.y_col].iloc[0]
             ref_lon: float = df[config.x_col].iloc[0]
+            
             x = (df[config.x_col] - ref_lon) * 111320 * np.cos(ref_lat * np.pi/180)
             y = (df[config.y_col] - ref_lat) * 110574
             z = df[config.z_col] - df[config.z_col].iloc[0]
