@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
-from puddy.trajectory_collection import TrajectoryCollection, ColumnConfig
+
 from puddy.trajectory_analyzer import TrajectoryAnalyzer
+from puddy.trajectory_collection import ColumnConfig, TrajectoryCollection
+
 
 def make_collection():
     data = [
@@ -11,10 +13,13 @@ def make_collection():
         {"lon": 21, "lat": 21, "alt": 210, "identifier": "B"},
     ]
     df = pd.DataFrame(data)
-    config = ColumnConfig.create_geo(lon_col="lon", lat_col="lat", alt_col="alt", identifier_col="identifier")
+    config = ColumnConfig.create_geo(
+        lon_col="lon", lat_col="lat", alt_col="alt", identifier_col="identifier"
+    )
     collection = TrajectoryCollection()
     collection.load_from_file(df, config=config, min_points=2)
     return collection
+
 
 def test_feature_extraction():
     collection = make_collection()
@@ -23,6 +28,7 @@ def test_feature_extraction():
     assert features.shape[0] == len(collection.trajectories)
     # Check some feature value range
     assert np.all(np.isfinite(features))
+
 
 def test_anomaly_detector_and_scores():
     collection = make_collection()
@@ -33,6 +39,7 @@ def test_anomaly_detector_and_scores():
     # Should be a numpy array of floats
     assert isinstance(scores, np.ndarray)
 
+
 def test_normalcy_dataframe():
     collection = make_collection()
     analyzer = TrajectoryAnalyzer(collection)
@@ -40,6 +47,7 @@ def test_normalcy_dataframe():
     df = analyzer.get_normalcy_df()
     assert "normalcy_score" in df.columns
     assert df.shape[0] == len(collection.trajectories)
+
 
 def test_find_anomalies_returns_subset():
     collection = make_collection()

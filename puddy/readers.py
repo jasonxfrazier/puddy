@@ -187,7 +187,7 @@ def read_parquet(
         raise RuntimeError(f"Error reading Parquet: {err}") from err
     finally:
         if should_close:
-            file_obj.close() # type: ignore
+            file_obj.close()  # type: ignore
 
 
 def read_dataframe(source: Union[pd.DataFrame, pa.Table]) -> Iterator[Dict[str, Any]]:

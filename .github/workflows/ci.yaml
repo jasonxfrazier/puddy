@@ -27,13 +27,13 @@ jobs:
         run: pytest
 
       - name: Check formatting with black
-        run: black --check schemarize tests
+        run: black --check puddy tests
 
       - name: Check import sorting with isort
-        run: isort --check-only schemarize tests
+        run: isort --check-only puddy tests
 
       - name: Lint with ruff
-        run: ruff check schemarize tests
+        run: ruff check puddy tests
 
       - name: Type check with mypy
-        run: mypy schemarize
+        run: mypy puddy
