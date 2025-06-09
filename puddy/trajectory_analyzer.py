@@ -13,13 +13,33 @@ from puddy.trajectory_collection import NormalizedTrajectory, TrajectoryCollecti
 
 
 class TrajectoryAnalyzer:
+    """
+    Analyzes collections of normalized trajectories by extracting features,
+    performing anomaly detection, and providing normalcy scoring.
+
+    Args:
+        collection (TrajectoryCollection): The collection of normalized trajectories to analyze.
+    """
+
     def __init__(self, collection: TrajectoryCollection) -> None:
+        """
+        Initialize the analyzer with a collection of trajectories.
+        """
         self.collection: TrajectoryCollection = collection
         self.scaler: StandardScaler = StandardScaler()
         self.features: Optional[np.ndarray] = None
         self.model: Optional[Union[IsolationForest, LocalOutlierFactor]] = None
 
     def extract_features(self, trajectory: NormalizedTrajectory) -> Dict[str, float]:
+        """
+        Extracts geometric and movement features from a single trajectory.
+
+        Args:
+            trajectory (NormalizedTrajectory): The trajectory to extract features from.
+
+        Returns:
+            Dict[str, float]: A dictionary of feature names to their computed values.
+        """
         try:
             points = np.array([[p.x, p.y, p.z] for p in trajectory.points])
             features = {
@@ -55,6 +75,16 @@ class TrajectoryAnalyzer:
             }
 
     def _safe_calculate(self, func, points: np.ndarray) -> float:
+        """
+        Helper to compute a feature, returning 0.0 if any error or non-finite result.
+
+        Args:
+            func: Function to compute a single feature.
+            points (np.ndarray): Points array for the trajectory.
+
+        Returns:
+            float: The computed value, or 0.0 on error.
+        """
         try:
             result = func(points)
             if np.isnan(result) or np.isinf(result):
@@ -65,18 +95,45 @@ class TrajectoryAnalyzer:
             return 0.0
 
     def _total_distance(self, points: np.ndarray) -> float:
+        """
+        Computes the total Euclidean distance of a trajectory.
+
+        Args:
+            points (np.ndarray): Nx3 array of trajectory points.
+
+        Returns:
+            float: The total distance traveled.
+        """
         if len(points) < 2:
             return 0.0
         diff = np.diff(points, axis=0)
         return float(np.sum(np.linalg.norm(diff, axis=1)))
 
     def _bounding_box_volume(self, points: np.ndarray) -> float:
+        """
+        Computes the volume of the axis-aligned bounding box for a trajectory.
+
+        Args:
+            points (np.ndarray): Nx3 array of points.
+
+        Returns:
+            float: The bounding box volume.
+        """
         if len(points) == 0:
             return 0.0
         ranges = np.ptp(points, axis=0)
         return float(np.prod(ranges)) if np.all(ranges > 0) else 0.0
 
     def _calculate_linearity(self, points: np.ndarray) -> float:
+        """
+        Estimates the path linearity using PCA's first explained variance ratio.
+
+        Args:
+            points (np.ndarray): Nx3 array of points.
+
+        Returns:
+            float: Path linearity metric (0-1).
+        """
         if len(points) < 2:
             return 0.0
         try:
@@ -87,6 +144,15 @@ class TrajectoryAnalyzer:
             return 0.0
 
     def _calculate_turns(self, points: np.ndarray) -> float:
+        """
+        Counts the number of turns in the trajectory above a certain angle threshold.
+
+        Args:
+            points (np.ndarray): Nx3 array of points.
+
+        Returns:
+            float: Number of significant turns.
+        """
         if len(points) < 3:
             return 0.0
         vectors = np.diff(points, axis=0)
@@ -100,6 +166,15 @@ class TrajectoryAnalyzer:
         return float(np.sum(angles > np.pi / 4))
 
     def _calculate_aspect_ratio(self, points: np.ndarray) -> float:
+        """
+        Computes the ratio between the largest and smallest bounding box side.
+
+        Args:
+            points (np.ndarray): Nx3 array of points.
+
+        Returns:
+            float: Aspect ratio (max / min axis length).
+        """
         if len(points) == 0:
             return 1.0
         ranges = np.ptp(points, axis=0)
@@ -107,6 +182,12 @@ class TrajectoryAnalyzer:
         return float(np.max(ranges) / min_range) if min_range != 0 else 1.0
 
     def prepare_features(self) -> np.ndarray:
+        """
+        Extracts features for all trajectories, scales them, and drops invalid entries.
+
+        Returns:
+            np.ndarray: Scaled feature array for all valid trajectories.
+        """
         all_features: List[List[float]] = []
         valid_trajectories: List[NormalizedTrajectory] = []
 
@@ -126,6 +207,15 @@ class TrajectoryAnalyzer:
         return self.features
 
     def train_anomaly_detector(self, method: str = "isolation_forest") -> None:
+        """
+        Trains an anomaly detection model using the specified method.
+
+        Args:
+            method (str): The anomaly detection method: 'isolation_forest' or 'lof'.
+
+        Raises:
+            ValueError: If the method is unknown.
+        """
         if self.features is None:
             self.prepare_features()
 
@@ -139,6 +229,12 @@ class TrajectoryAnalyzer:
             raise ValueError(f"Unknown method: {method}")
 
     def get_normalcy_scores(self) -> np.ndarray:
+        """
+        Returns the anomaly/normalcy score for each trajectory.
+
+        Returns:
+            np.ndarray: Array of normalcy scores (higher is more normal).
+        """
         if self.model is None:
             raise ValueError("Must train anomaly detector before getting scores")
         if isinstance(self.model, IsolationForest):
@@ -149,6 +245,15 @@ class TrajectoryAnalyzer:
     def find_anomalies(
         self, threshold: float = 0.2
     ) -> List[Tuple[NormalizedTrajectory, float]]:
+        """
+        Returns a list of anomalous trajectories and their scores.
+
+        Args:
+            threshold (float): Score threshold below which trajectories are considered anomalous.
+
+        Returns:
+            List[Tuple[NormalizedTrajectory, float]]: List of (trajectory, score) tuples for anomalies.
+        """
         scores = self.get_normalcy_scores()
         anomalies = [
             (traj, score)
@@ -158,6 +263,15 @@ class TrajectoryAnalyzer:
         return anomalies
 
     def get_normalcy_df(self, id_column_name: str = "identifier") -> pd.DataFrame:
+        """
+        Returns a DataFrame containing identifiers and normalcy scores.
+
+        Args:
+            id_column_name (str): Name of the identifier column.
+
+        Returns:
+            pd.DataFrame: DataFrame with identifier and normalcy_score columns, sorted by score.
+        """
         if self.model is None:
             raise ValueError("Must train anomaly detector before getting scores")
         scores = self.get_normalcy_scores()
@@ -177,6 +291,19 @@ def visualize_trajectories_sample(
     show_all_anomalies: bool = True,
     threshold: float = 0.2,
 ) -> Tuple[plt.Figure, plt.Axes]:  # type: ignore
+    """
+    Plots a sample of trajectories colored by their normalcy score.
+
+    Args:
+        trajectories (List[NormalizedTrajectory]): List of trajectories to plot.
+        scores (np.ndarray): Array of normalcy scores for the trajectories.
+        normal_sample (int): Maximum number of normal (non-anomalous) trajectories to show.
+        show_all_anomalies (bool): If True, show all anomalies. Otherwise, sample anomalies.
+        threshold (float): Score threshold to distinguish anomalies from normal trajectories.
+
+    Returns:
+        Tuple[plt.Figure, plt.Axes]: Matplotlib figure and axes objects for further customization.
+    """
     plt.figure(figsize=(15, 10))
     ax = plt.subplot(111, projection="3d")
     normal_indices = np.where(scores >= threshold)[0]

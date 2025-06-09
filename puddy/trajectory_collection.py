@@ -11,6 +11,8 @@ from puddy.readers import read_data
 
 
 class TrajectoryType(Enum):
+    """Type of coordinate system for the trajectory."""
+
     GEOGRAPHIC = "geo"
     CARTESIAN = "xyz"
     OTHER = "other"
@@ -18,6 +20,17 @@ class TrajectoryType(Enum):
 
 @dataclass
 class ColumnConfig:
+    """
+    Configuration for identifying columns in the input data.
+
+    Attributes:
+        x_col: Name of the column containing X or longitude values.
+        y_col: Name of the column containing Y or latitude values.
+        z_col: Name of the column containing Z or altitude values.
+        identifier_col: Optional; name of the trajectory/grouping identifier column.
+        trajectory_type: The type of coordinates (geographic or cartesian).
+    """
+
     x_col: str
     y_col: str
     z_col: str
@@ -32,6 +45,18 @@ class ColumnConfig:
         alt_col: str = "alt",
         identifier_col: Optional[str] = None,
     ) -> "ColumnConfig":
+        """
+        Returns a ColumnConfig for geographic coordinates.
+
+        Args:
+            lon_col: Name of longitude column.
+            lat_col: Name of latitude column.
+            alt_col: Name of altitude column.
+            identifier_col: Optional identifier/grouping column.
+
+        Returns:
+            ColumnConfig: Configured for geographic data.
+        """
         return cls(lon_col, lat_col, alt_col, identifier_col, TrajectoryType.GEOGRAPHIC)
 
     @classmethod
@@ -42,11 +67,32 @@ class ColumnConfig:
         z_col: str = "z",
         identifier_col: Optional[str] = None,
     ) -> "ColumnConfig":
+        """
+        Returns a ColumnConfig for cartesian coordinates.
+
+        Args:
+            x_col: Name of X coordinate column.
+            y_col: Name of Y coordinate column.
+            z_col: Name of Z coordinate column.
+            identifier_col: Optional identifier/grouping column.
+
+        Returns:
+            ColumnConfig: Configured for cartesian data.
+        """
         return cls(x_col, y_col, z_col, identifier_col, TrajectoryType.CARTESIAN)
 
 
 @dataclass
 class NormalizedPoint:
+    """
+    A single point in a normalized trajectory.
+
+    Attributes:
+        x: X coordinate (or normalized longitude).
+        y: Y coordinate (or normalized latitude).
+        z: Z coordinate (or normalized altitude).
+    """
+
     x: float
     y: float
     z: float
@@ -54,6 +100,14 @@ class NormalizedPoint:
 
 @dataclass
 class NormalizedTrajectory:
+    """
+    A trajectory normalized to a local origin.
+
+    Attributes:
+        points: List of normalized points for the trajectory.
+        identifier: Trajectory or group identifier.
+    """
+
     points: List[NormalizedPoint]
     identifier: str = "ungrouped"
 
@@ -61,6 +115,16 @@ class NormalizedTrajectory:
     def from_df_group(
         cls, df: pd.DataFrame, config: ColumnConfig
     ) -> "NormalizedTrajectory":
+        """
+        Create a normalized trajectory from a DataFrame group and column config.
+
+        Args:
+            df: DataFrame with columns for coordinates and optional identifier.
+            config: ColumnConfig for extracting and normalizing coordinates.
+
+        Returns:
+            NormalizedTrajectory: The normalized trajectory object.
+        """
         df = df.copy()
         df[config.x_col] = pd.to_numeric(df[config.x_col], errors="raise")
         df[config.y_col] = pd.to_numeric(df[config.y_col], errors="raise")
@@ -91,18 +155,32 @@ class NormalizedTrajectory:
 
 
 class TrajectoryCollection:
+    """
+    A collection of normalized trajectories, with utilities for loading and visualization.
+    """
+
     def __init__(self) -> None:
+        """
+        Initialize an empty collection.
+        """
         self.trajectories: List[NormalizedTrajectory] = []
         self.config: Optional[ColumnConfig] = None
 
     def load_from_file(
         self,
-        source: Union[
-            str, TextIO, pd.DataFrame, pa.Table
-        ],  # str, file-like, DataFrame, etc.
+        source: Union[str, TextIO, pd.DataFrame, pa.Table],
         config: Optional[ColumnConfig] = None,
         min_points: int = 20,
     ) -> None:
+        """
+        Loads trajectory data from any supported file or in-memory object,
+        normalizes each group, and stores the results.
+
+        Args:
+            source: File path, file-like object, DataFrame, or Arrow Table.
+            config: ColumnConfig specifying data columns and type.
+            min_points: Minimum number of points required per trajectory/group.
+        """
         if config is None:
             config = ColumnConfig.create_geo(identifier_col="identifier")
         self.config = config
@@ -128,6 +206,12 @@ class TrajectoryCollection:
         print(f"Loaded {len(self.trajectories)} trajectories")
 
     def visualize_sample(self, n: int = 5) -> None:
+        """
+        Plots a random sample of trajectories in 3D.
+
+        Args:
+            n: Number of trajectories to visualize (or all if fewer available).
+        """
         plt.figure(figsize=(10, 10))
         ax = plt.subplot(111, projection="3d")
         if len(self.trajectories) == 0:
