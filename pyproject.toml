@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "puddy"
-version = "0.1.3"
+version = "0.1.4"
 description = "A toolkit for analyzing spatial trajectories"
 readme = "README.md"
 license = { text = "MIT" }
