@@ -206,24 +206,31 @@ class TrajectoryAnalyzer:
         self.features = self.scaler.fit_transform(feature_array)
         return self.features
 
-    def train_anomaly_detector(self, method: str = "isolation_forest") -> None:
+    def train_anomaly_detector(
+        self, method: str = "isolation_forest", **kwargs
+    ) -> None:
         """
         Trains an anomaly detection model using the specified method.
 
         Args:
             method (str): The anomaly detection method: 'isolation_forest' or 'lof'.
+            **kwargs: Additional keyword arguments passed to the chosen model's constructor.
 
         Raises:
             ValueError: If the method is unknown.
+
+        Example:
+            analyzer.train_anomaly_detector(method="isolation_forest", contamination=0.2, n_estimators=200)
+            analyzer.train_anomaly_detector(method="lof", contamination=0.05, n_neighbors=10)
         """
         if self.features is None:
             self.prepare_features()
 
         if method == "isolation_forest":
-            self.model = IsolationForest(contamination=0.1, random_state=42)
+            self.model = IsolationForest(random_state=42, **kwargs)
             self.model.fit(self.features)  # type: ignore
         elif method == "lof":
-            self.model = LocalOutlierFactor(contamination=0.1, novelty=True)
+            self.model = LocalOutlierFactor(**kwargs)
             self.model.fit(self.features)  # type: ignore
         else:
             raise ValueError(f"Unknown method: {method}")
